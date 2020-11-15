@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+              integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+              crossorigin="anonymous">
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+        <link rel="icon" href="/favicon.ico" type="image/x-icon">
+
+
+        <!-- JS -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+                integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+                crossorigin="anonymous"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+                integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+                crossorigin="anonymous"></script>
+
+        <title>지하철 화장실 안내 서비스</title>
+
+        <!-- script -->
+        <script type="text/javascript">
+
+
+            $(document).ready(function () {
+                $("#stations-box").html("");
+                $("#reviews-box").html("");
+                findStation();
+            });
+
+            let stations;
+            let ll;
+            let ss;
+            let op_code;
+            let line_code;
+            let station_code;
+
+            function findStation() {
+                let ee = $("#line option:selected").text();
+                let q = $("#station option:selected").text();
+
+                $.ajax({
+                    type: "GET",
+                    url: "/stations/" + ee, //stations/1호선
+                    data: {},
+                    success: function (response) {
+                        if (response["result"] == "success") {
+                            stations = response["stations"];
+                        }
+                        $('#station').empty();
+                        for (let i = 0; i < stations.length; i++) {
+                            if (ee == stations[i]["LN_NM"]) {
+                                let option = $("<option>" + stations[i]["STIN_NM"] + "</option>");
+                                $('#station').append(option);
+                            }
+                        }
+
+                        for (let j = 0; j < stations.length; j++) {
+                            if (ee == stations[j]["LN_NM"])
+                                //&& q == stations[j]["STIN_NM"])
+                            {
+                                //console.log(stations[j]["STIN_NM"]);
+                                op_code = stations[j]["RAIL_OPR_ISTT_CD"];
+                                line_code = stations[j]["LN_CD"];
+                                station_code = stations[j]["STIN_CD"];
+                                //console.log(op_code);
+                                //console.log(line_code);
+                                //console.log(station_code);
+                                break;
+                            }
+                        }
+
+                    }
+                })
+            }
+
+            // function findDestination() {
+            //     ll = $("#line option:selected").text();
+            //     ss = $("#station option:selected").text();
+            //     //console.log(ee);
+            //     $.ajax({
+            //         type: "GET",
+            //         url: "/stations/" + ll, //stations/1호선
+            //         data: {},
+            //         success: function (response) {
+            //             if (response["result"] == "success") {
+            //                 stations = response["stations"];
+            //             }
+            //             $('#station').empty();
+            //             for (let i = 0; i < stations.length; i++) {
+            //                 if (ee == stations[i]["LN_NM"] && ss==stations[i]["STIN_NM"]){
+            //                     op_code = stations[i]["RAIL_OPR_ISTT_CD"];
+            //                     line_code = stations[i]["LN_NM"];
+            //                     station_code = stations[i]["STIN_CD"];
+            //                     console.log(op_code);
+            //                     console.log(line_code);
+            //                     console.log(station_code);
+            //                 }
+            //             }
+            //         }
+            //     })
+            // }
+
+            function showToiletInfo() {
+                let station_name = $("#station option:selected").text();
+                $('#toiletInfo').empty();
+                $.ajax({
+                    type: "GET",
+                    data: {},
+                    success: function (response) {
+                        let restrooms = response["body"];
+                        for (let i = 0; i < restrooms.length; i++) {
+                            let exitNo = restrooms[i]["exitNo"]; //출구번호
+                            if (exitNo == null)
+                                exitNo = "*";
+                            let gateInotDvNm = restrooms[i]["gateInotDvNm"]; // 개찰구내외
+                            let grndDvNm = restrooms[i]["grndDvNm"]; // 지상구분
+                            let dtlLoc = restrooms[i]["dtlLoc"]; // 상세위치
+                            let tempHtml = `<tr>
+                        <td>${station_name}역</td>
+                        <td>${exitNo}</td>
+                        <td>개찰구 ${gateInotDvNm}</td>
+                        <td>${grndDvNm}</td>
+                        <td>${dtlLoc}</td>
+                    </tr>`;
+                            $('#toiletInfo').append(tempHtml);
+
+                        }
+                    }
+                })
+            }
+
+            function makeReview() {
+                // 1. 역, 리뷰 내용을 가져옵니다.(station 값 다시 수정)
+                let line = $("#line option:selected").text();
+                let station = $("#station option:selected").text();
+                let review = $("#toiletReview").val();
+
+                $.ajax({
+                    type: "POST",
+                    url: "/reviews",
+                    data: {line_give: line, station_give: station, review_give: review},
+                    success: function (response) {
+                        if (response["result"] == "success") {
+                            alert(response["msg"]);
+                            window.location.reload();
+                        }
+                    }
+                })
+            }
+
+            function showReview() {
+                let l = $("#line option:selected").text();
+                let s = $("#station option:selected").text();
+                $('#reviews-box').empty();
+                $.ajax({
+                    type: "GET",
+                    url: "/reviews",
+                    data: {},
+                    success: function (response) {
+                        if (response["result"] == "success") {
+                            let reviews = response["reviews"];
+                            for (let i = 0; i < reviews.length; i++) {
+                                if (s == reviews[i]["station"])
+                                    makeSentence(reviews[i]["review"]);
+                            }
+                        } else {
+                            alert("리뷰를 받아오지 못했습니다");
+                        }
+                    }
+                })
+            }
+
+            function makeSentence(review) {
+                let tempHtml = `<div class="alert alert-warning" role="alert">${review}</div>`;
+                $("#reviews-box").append(tempHtml);
+            }
+        </script>
+
+        <!-- style -->
+        <style type="text/css">
+
+            .top {
+                background-color: white;
+                padding: 20px 20px 20px 20px;
+            }
+
+            .middle {
+                background-color: #607196;
+            }
+
+            .wrap1 {
+                background-color: #BABFD1;
+                width: 500px;
+                padding: 30px 30px 30px 30px;
+                margin: auto;
+                color: white;
+                border-radius: 20px 20px 20px 20px;
+            }
+
+
+            .btn-primary:hover,
+            .btn-primary:focus,
+            .btn-primary:active,
+            .btn-primary.active,
+            .open .dropdown-toggle.btn-primary {
+                background-color: #A6A8C1;
+
+            }
+
+            .btn {
+                background-color: #FF7B9C;
+                border-color: #FF7B9C;
+            }
+
+            .search_button {
+                float: right;
+            }
+
+            .wrap2 {
+                width: 800px;
+                padding: 30px 30px 30px 30px;
+                margin: auto;
+            }
+
+            .review {
+                width: 800px;
+                padding: 30px 30px 30px 30px;
+                margin: auto;
+            }
+
+            .review_input {
+                width: 750px;
+                height: 80px;
+                float: left;
+            }
+
+            .upload {
+                /*width: 50px;*/
+                /*height: 150px;*/
+                float: right;
+            }
+
+        </style>
+    </head>
+    <body>
+
+        <div class="top">
+            <h1 style="display: inline"> ZIHWAJA</h1>
+            &nbsp;&nbsp;
+        </div>
+
+
+        <div class="middle">
+            <br><br><br>
+            <div class="wrap1">
+                <form>
+                    <div class="form-group">
+                        <label for="exampleFormControlSelect1">지하철의 호선을 선택해주세요</label>
+                        <br>
+                        <select class="form-control" id="line" onchange="findStation()">
+                            <option>1호선</option>
+                            <option>2호선</option>
+                            <option>3호선</option>
+                            <option>4호선</option>
+                            <option>5호선</option>
+                            <option>6호선</option>
+                            <option>7호선</option>
+                            <option>8호선</option>
+                            <option>9호선</option>
+
+                        </select>
+                    </div>
+                    <br>
+                    <div class="form-group">
+                        <label for="exampleFormControlSelect1">역 이름을 선택해주세요</label>
+                        <br>
+                        <select class="form-control" id="station">
+                        </select>
+                    </div>
+                    <br>
+                    <div class="search_button">
+                        <button type="button" class="btn btn-primary" onclick="showReview(); showToiletInfo();">검색
+                        </button>
+                    </div>
+                    <br>
+                </form>
+            </div>
+            <br><br><br>
+        </div>
+
+        <div class="contents">
+            <div class="wrap2">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th scope="col">화장실 안내</th>
+                        <th scope="col">출구번호</th>
+                        <th scope="col">개찰구 내/외</th>
+                        <th scope="col">지상구분</th>
+                        <th scope="col">상세위치</th>
+                    </tr>
+                    </thead>
+                    <tbody id="toiletInfo">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <br><br><br><br><br>
+        <div class="review">
+            <form>
+                <div class="review_input">
+                    <div class="form-group">
+                        <label for="exampleFormControlTextarea">다른 사용자들을 위해서 다녀간 후기를 남겨주세요</label>
+                        <textarea class="form-control" rows="1" id="toiletReview"></textarea>
+                    </div>
+                </div>
+                <div class="upload">
+                    <button type="button" class="btn btn-primary" onclick="makeReview()">업로드</button>
+                </div>
+            </form>
+
+            <br><br><br><br><br><br>
+            <div id="reviews-box">
+
+            </div>
+        </div>
+
+    </body>
+</html>

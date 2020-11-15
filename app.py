@@ -1,10 +1,11 @@
 from flask import Flask, render_template, jsonify, request
 from pymongo import MongoClient  # pymongo를 임포트 하기(패키지 인스톨 먼저 해야겠죠?)
+import requests
 
 app = Flask(__name__)
 
-client = MongoClient('localhost', 27017)  # mongoDB는 27017 포트로 돌아갑니다.
-db = client.dbZihwaja # 'dbZihwaja'라는 이름의 db를 만듭니다.
+client = MongoClient('mongodb://test:test@52.78.187.20', 27017)  # mongoDB는 27017 포트로 돌아갑니다.
+db = client.zihwaja  # 'zihwaja'라는 이름의 db를 만듭니다.
 
 
 ## HTML을 주는 부분
@@ -17,9 +18,32 @@ def home():
 @app.route('/stations/<line>', methods=['GET'])
 def read_stations(line):
     # print(line)
-    stations = list(db.seoul_stations.find({}, {'_id': 0}))
+    stations = list(db.seoul_subway.find({}, {'_id': 0}))
     # print(stations)
     return jsonify({'result': 'success', 'stations': stations})
+
+
+@app.route('/stations/<selectedLine>/<selectedStation>', methods=['GET'])
+def test(selectedLine, selectedStation):
+    station = list(
+        db.seoul_subway.find(
+            {"LN_NM": selectedLine, "STIN_NM": selectedStation},
+            {'_id': 0}
+        )
+    )
+
+    op_code = str(station[0]['RAIL_OPR_ISTT_CD'])
+    line_code = str(station[0]['LN_CD'])
+    station_code = str(station[0]['STIN_CD'])
+    response = requests.get(url)
+    result_cnt = response.json()['header']['resultCnt']
+
+    result_list = []
+    if result_cnt != 0:
+        result_list = response.json()['body']
+
+    return jsonify({'result': 'success', 'stations': result_list})
+
 
 @app.route('/reviews', methods=['GET'])
 def read_reviews():
@@ -47,6 +71,7 @@ def write_review():
     db.reviews.insert_one(review)
     # 성공 여부 & 성공 메시지 반환
     return jsonify({'result': 'success', 'msg': '리뷰가 성공적으로 작성되었습니다.'})
+
 
 if __name__ == '__main__':
     app.run('localhost', port=5000, debug=True)

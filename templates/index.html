@@ -24,10 +24,14 @@
 
         <title>지하철 화장실 안내 서비스</title>
 
+        <meta property="og:title" content="지하철 화장실 안내 서비스"/>
+        <meta property="og:description" content="지하철의 화장실에 대한 구체적인 정보를 쉽게 알 수 있는 사이트입니다."/>
+        <meta property="og:image" content="{{ url_for('static', filename='subway.jpg') }}"/>
+
+        <!-- 구글폰트 -->
+
         <!-- script -->
         <script type="text/javascript">
-
-
             $(document).ready(function () {
                 $("#stations-box").html("");
                 $("#reviews-box").html("");
@@ -35,8 +39,6 @@
             });
 
             let stations;
-            let ll;
-            let ss;
             let op_code;
             let line_code;
             let station_code;
@@ -60,52 +62,45 @@
                                 $('#station').append(option);
                             }
                         }
-
-                        for (let j = 0; j < stations.length; j++) {
-                            if (ee == stations[j]["LN_NM"])
-                                //&& q == stations[j]["STIN_NM"])
-                            {
-                                //console.log(stations[j]["STIN_NM"]);
-                                op_code = stations[j]["RAIL_OPR_ISTT_CD"];
-                                line_code = stations[j]["LN_CD"];
-                                station_code = stations[j]["STIN_CD"];
-                                //console.log(op_code);
-                                //console.log(line_code);
-                                //console.log(station_code);
-                                break;
-                            }
-                        }
-
                     }
                 })
             }
 
-            // function findDestination() {
-            //     ll = $("#line option:selected").text();
-            //     ss = $("#station option:selected").text();
-            //     //console.log(ee);
-            //     $.ajax({
-            //         type: "GET",
-            //         url: "/stations/" + ll, //stations/1호선
-            //         data: {},
-            //         success: function (response) {
-            //             if (response["result"] == "success") {
-            //                 stations = response["stations"];
-            //             }
-            //             $('#station').empty();
-            //             for (let i = 0; i < stations.length; i++) {
-            //                 if (ee == stations[i]["LN_NM"] && ss==stations[i]["STIN_NM"]){
-            //                     op_code = stations[i]["RAIL_OPR_ISTT_CD"];
-            //                     line_code = stations[i]["LN_NM"];
-            //                     station_code = stations[i]["STIN_CD"];
-            //                     console.log(op_code);
-            //                     console.log(line_code);
-            //                     console.log(station_code);
-            //                 }
-            //             }
-            //         }
-            //     })
-            // }
+            function send_line_station() {
+                let selectedLine = $("#line option:selected").text(); //4호선
+                let selectedStation = $("#station option:selected").text(); //과천
+                $('#toiletInfo').empty();
+                $.ajax({
+                    type: "GET",
+                    url: "/stations/" + selectedLine + "/" + selectedStation, // /stations/4호선/과천
+                    data: {},
+                    success: function (response) {
+                        let restrooms = response["stations"];
+                        if (restrooms.length == 0) {
+                            alert("정보가 없습니다")
+                            return;
+                        }
+                        for (let i = 0; i < restrooms.length; i++) {
+                            let exitNo = restrooms[i]["exitNo"]; //출구번호
+                            if (exitNo == null)
+                                exitNo = "*";
+                            let gateInotDvNm = restrooms[i]["gateInotDvNm"]; // 개찰구내외
+                            let grndDvNm = restrooms[i]["grndDvNm"]; // 지상구분
+                            let dtlLoc = restrooms[i]["dtlLoc"]; // 상세위치
+                            let tempHtml = `<tr>
+                        <td>${selectedStation}역</td>
+                        <td>${exitNo}</td>
+                        <td>개찰구 ${gateInotDvNm}</td>
+                        <td>${grndDvNm}</td>
+                        <td>${dtlLoc}</td>
+                    </tr>`;
+                            $('#toiletInfo').append(tempHtml);
+
+                        }
+                        console.log(restrooms)
+                    }
+                })
+            }
 
             function showToiletInfo() {
                 let station_name = $("#station option:selected").text();
@@ -286,7 +281,7 @@
                     </div>
                     <br>
                     <div class="search_button">
-                        <button type="button" class="btn btn-primary" onclick="showReview(); showToiletInfo();">검색
+                        <button type="button" class="btn btn-primary" onclick="showReview(); send_line_station()">검색
                         </button>
                     </div>
                     <br>
@@ -325,12 +320,9 @@
                     <button type="button" class="btn btn-primary" onclick="makeReview()">업로드</button>
                 </div>
             </form>
-
             <br><br><br><br><br><br>
             <div id="reviews-box">
-
             </div>
         </div>
-
     </body>
 </html>

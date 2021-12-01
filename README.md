@@ -95,3 +95,13 @@
         - 클라이언트로부터 역 이름을 받음
         - 역 이름에 대한 리뷰 내용을 Reveiw Table에서 가져옴
         - 리뷰 내용을 클라이언트에게 반환
+
+
+
+7. 사용도구 및 언어
+- Python
+- MongoDB
+- Flask
+- HTML
+- CSS
+- Bootstrap
